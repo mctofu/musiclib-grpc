@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package mlibgrpc;
+
+service MusicLibrary {
+    rpc Browse (BrowseRequest) returns (BrowseResponse) {}
+}
+
+message BrowseRequest {
+    string path = 1;
+    string search = 2;
+    bool reverse = 3;
+}
+
+message BrowseResponse {
+    repeated BrowseItem items = 1;
+}
+
+message BrowseItem {
+    string name = 1;
+    string uri = 2;
+    bool folder = 3;
+}
