@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/mctofu/music-library-grpc/go/mlibgrpc"
 	"golang.org/x/net/context"
@@ -25,7 +26,14 @@ func run() error {
 	}
 	client := mlibgrpc.NewMusicLibraryClient(conn)
 
-	resp, err := client.Browse(ctx, &mlibgrpc.BrowseRequest{})
+	var path string
+	if len(os.Args) > 1 {
+		path = os.Args[1]
+	}
+
+	resp, err := client.Browse(ctx, &mlibgrpc.BrowseRequest{
+		Path: path,
+	})
 	if err != nil {
 		return err
 	}

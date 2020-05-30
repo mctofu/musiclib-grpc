@@ -10,6 +10,7 @@ message BrowseRequest {
     string path = 1;
     string search = 2;
     bool reverse = 3;
+    BrowseType browse_type = 4;
 }
 
 message BrowseResponse {
@@ -20,4 +21,11 @@ message BrowseItem {
     string name = 1;
     string uri = 2;
     bool folder = 3;
+    string image_uri = 4;
+}
+
+enum BrowseType {
+    BROWSE_TYPE_UNSPECIFIED = 0;
+    BROWSE_TYPE_FOLDER = 1;
+    BROWSE_TYPE_ALBUM_ARTIST = 2;
 }

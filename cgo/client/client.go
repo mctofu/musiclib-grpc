@@ -4,6 +4,7 @@ package main
 typedef struct MLibGRPC_BrowseItem {
 	char *name;
 	char *uri;
+	char *image_uri;
 	int folder;
 } MLibGRPC_BrowseItem;
 */
@@ -13,6 +14,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"sync"
 	"unsafe"
 
 	"github.com/mctofu/music-library-grpc/go/mlibgrpc"
@@ -21,9 +23,13 @@ import (
 
 var client mlibgrpc.MusicLibraryClient
 var conn *grpc.ClientConn
+var connMutex sync.Mutex
 
 //export MLibGRPC_Connect
 func MLibGRPC_Connect() int {
+	connMutex.Lock()
+	defer connMutex.Unlock()
+
 	if client != nil {
 		log.Printf("MLibGRPC_Connect: already connected\n")
 		return 1
@@ -44,6 +50,9 @@ func MLibGRPC_Connect() int {
 
 //export MLibGRPC_Disconnect
 func MLibGRPC_Disconnect() int {
+	connMutex.Lock()
+	defer connMutex.Unlock()
+
 	if client == nil {
 		log.Printf("MLibGRPC_Disconnect: not connected\n")
 		return 1
@@ -63,15 +72,22 @@ func MLibGRPC_Disconnect() int {
 }
 
 //export MLibGRPC_Browse
-func MLibGRPC_Browse(cPath *C.char, cSearch *C.char) **C.struct_MLibGRPC_BrowseItem {
+func MLibGRPC_Browse(cPath *C.char, cSearch *C.char, browseType int32) **C.struct_MLibGRPC_BrowseItem {
 	path := C.GoString(cPath)
 	search := C.GoString(cSearch)
 
-	log.Printf("MLibGRPC_Browse: Browse path: %s search: %s\n", path, search)
+	browseTypeName := mlibgrpc.BrowseType_name[browseType]
 
-	items, err := browse(path, search)
+	log.Printf("MLibGRPC_Browse: Browse path: %s search: %s type: %s\n", path, search, browseTypeName)
+
+	items, err := browse(path, search, mlibgrpc.BrowseType(browseType))
 	if err != nil {
 		log.Printf("MLibGRPC_Browse: error %v\n", err)
+		items = []*mlibgrpc.BrowseItem{
+			{
+				Name: err.Error(),
+			},
+		}
 	}
 
 	result := C.malloc(C.size_t(len(items)+1) * C.size_t(unsafe.Sizeof(uintptr(0))))
@@ -82,6 +98,7 @@ func MLibGRPC_Browse(cPath *C.char, cSearch *C.char) **C.struct_MLibGRPC_BrowseI
 			C.size_t(unsafe.Sizeof(C.struct_MLibGRPC_BrowseItem{}))))
 		cBrowseItem.name = C.CString(item.Name)
 		cBrowseItem.uri = C.CString(item.Uri)
+		cBrowseItem.image_uri = C.CString(item.ImageUri)
 		if item.Folder {
 			cBrowseItem.folder = 1
 		} else {
@@ -93,32 +110,32 @@ func MLibGRPC_Browse(cPath *C.char, cSearch *C.char) **C.struct_MLibGRPC_BrowseI
 
 	resultArr[len(items)] = nil
 
-	log.Printf("MLibGRPC_Browse: returning\n")
+	log.Printf("MLibGRPC_Browse: %d results\n", len(items))
 
 	return (**C.struct_MLibGRPC_BrowseItem)(result)
 }
 
-func browse(path string, search string) ([]*mlibgrpc.BrowseItem, error) {
+func browse(path string, search string, browseType mlibgrpc.BrowseType) ([]*mlibgrpc.BrowseItem, error) {
+	connMutex.Lock()
+	defer connMutex.Unlock()
+
 	if client == nil {
-		log.Printf("MLibGRPC_Browse: not connected\n")
 		return nil, errors.New("not connected")
 	}
 
 	ctx := context.Background()
 
 	req := &mlibgrpc.BrowseRequest{
-		Path:    path,
-		Search:  search,
-		Reverse: true,
+		Path:       path,
+		Search:     search,
+		Reverse:    true,
+		BrowseType: browseType,
 	}
 
 	resp, err := client.Browse(ctx, req)
 	if err != nil {
-		log.Printf("MLibGRPC_Browse: failed to browse: %v\n", err)
 		return nil, err
 	}
-
-	log.Printf("MLibGRPC_Browse: %d results\n", len(resp.Items))
 
 	return resp.Items, nil
 }
