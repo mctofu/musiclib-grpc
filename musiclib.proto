@@ -3,11 +3,14 @@ syntax = "proto3";
 package mlibgrpc;
 
 service MusicLibrary {
+    // Browse returns matching contents of a folder uri
     rpc Browse (BrowseRequest) returns (BrowseResponse) {}
+    // Media resolves a folder uri to a list of descendant media uris
+    rpc Media (MediaRequest) returns (MediaResponse) {}
 }
 
 message BrowseRequest {
-    string path = 1;
+    string uri = 1;
     string search = 2;
     bool reverse = 3;
     BrowseType browse_type = 4;
@@ -28,4 +31,15 @@ enum BrowseType {
     BROWSE_TYPE_UNSPECIFIED = 0;
     BROWSE_TYPE_FOLDER = 1;
     BROWSE_TYPE_ALBUM_ARTIST = 2;
+}
+
+message MediaRequest {
+    string uri = 1;
+    string search = 2;
+    bool reverse = 3;
+    BrowseType browse_type = 4;
+}
+
+message MediaResponse {
+    repeated string uris = 1;
 }

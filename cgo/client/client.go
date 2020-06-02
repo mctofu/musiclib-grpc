@@ -72,15 +72,14 @@ func MLibGRPC_Disconnect() int {
 }
 
 //export MLibGRPC_Browse
-func MLibGRPC_Browse(cPath *C.char, cSearch *C.char, browseType int32) **C.struct_MLibGRPC_BrowseItem {
-	path := C.GoString(cPath)
+func MLibGRPC_Browse(cURI *C.char, cSearch *C.char, browseType int32) **C.struct_MLibGRPC_BrowseItem {
+	uri := C.GoString(cURI)
 	search := C.GoString(cSearch)
-
 	browseTypeName := mlibgrpc.BrowseType_name[browseType]
 
-	log.Printf("MLibGRPC_Browse: Browse path: %s search: %s type: %s\n", path, search, browseTypeName)
+	log.Printf("MLibGRPC_Browse: uri: %s search: %s type: %s\n", uri, search, browseTypeName)
 
-	items, err := browse(path, search, mlibgrpc.BrowseType(browseType))
+	items, err := browse(uri, search, mlibgrpc.BrowseType(browseType))
 	if err != nil {
 		log.Printf("MLibGRPC_Browse: error %v\n", err)
 		items = []*mlibgrpc.BrowseItem{
@@ -115,7 +114,7 @@ func MLibGRPC_Browse(cPath *C.char, cSearch *C.char, browseType int32) **C.struc
 	return (**C.struct_MLibGRPC_BrowseItem)(result)
 }
 
-func browse(path string, search string, browseType mlibgrpc.BrowseType) ([]*mlibgrpc.BrowseItem, error) {
+func browse(uri string, search string, browseType mlibgrpc.BrowseType) ([]*mlibgrpc.BrowseItem, error) {
 	connMutex.Lock()
 	defer connMutex.Unlock()
 
@@ -126,7 +125,7 @@ func browse(path string, search string, browseType mlibgrpc.BrowseType) ([]*mlib
 	ctx := context.Background()
 
 	req := &mlibgrpc.BrowseRequest{
-		Path:       path,
+		Uri:        uri,
 		Search:     search,
 		Reverse:    true,
 		BrowseType: browseType,
@@ -138,6 +137,59 @@ func browse(path string, search string, browseType mlibgrpc.BrowseType) ([]*mlib
 	}
 
 	return resp.Items, nil
+}
+
+//export MLibGRPC_Media
+func MLibGRPC_Media(cURI *C.char, cSearch *C.char, browseType int32) **C.char {
+	uri := C.GoString(cURI)
+	search := C.GoString(cSearch)
+	browseTypeName := mlibgrpc.BrowseType_name[browseType]
+
+	log.Printf("MLibGRPC_Media: uri: %s type: %s\n", uri, browseTypeName)
+
+	items, err := media(uri, search, mlibgrpc.BrowseType(browseType))
+	if err != nil {
+		log.Printf("MLibGRPC_Media: error %v\n", err)
+		items = []string{err.Error()}
+	}
+
+	result := C.malloc(C.size_t(len(items)+1) * C.size_t(unsafe.Sizeof(uintptr(0))))
+	resultArr := (*[1<<30 - 1]*C.char)(result)
+
+	for i, item := range items {
+		resultArr[i] = C.CString(item)
+	}
+
+	resultArr[len(items)] = nil
+
+	log.Printf("MLibGRPC_Media: %d results\n", len(items))
+
+	return (**C.char)(result)
+}
+
+func media(uri string, search string, browseType mlibgrpc.BrowseType) ([]string, error) {
+	connMutex.Lock()
+	defer connMutex.Unlock()
+
+	if client == nil {
+		return nil, errors.New("not connected")
+	}
+
+	ctx := context.Background()
+
+	req := &mlibgrpc.MediaRequest{
+		Uri:        uri,
+		Search:     search,
+		Reverse:    true,
+		BrowseType: browseType,
+	}
+
+	resp, err := client.Media(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Uris, nil
 }
 
 func main() {

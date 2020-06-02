@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -26,13 +27,51 @@ func run() error {
 	}
 	client := mlibgrpc.NewMusicLibraryClient(conn)
 
+	if len(os.Args) < 2 {
+		return errors.New("must specify command")
+	}
+
+	cmd := os.Args[1]
+
+	switch cmd {
+	case "browse":
+		return browse(ctx, client, os.Args[2:])
+	case "media":
+		return media(ctx, client, os.Args[2:])
+	default:
+		return fmt.Errorf("unknown command: %s", cmd)
+	}
+
+}
+
+func browse(ctx context.Context, client mlibgrpc.MusicLibraryClient, args []string) error {
 	var path string
-	if len(os.Args) > 1 {
-		path = os.Args[1]
+
+	if len(args) > 0 {
+		path = args[0]
 	}
 
 	resp, err := client.Browse(ctx, &mlibgrpc.BrowseRequest{
-		Path: path,
+		Uri: path,
+	})
+	if err != nil {
+		return err
+	}
+
+	dumpJSON(resp)
+
+	return nil
+}
+
+func media(ctx context.Context, client mlibgrpc.MusicLibraryClient, args []string) error {
+	var path string
+
+	if len(args) > 0 {
+		path = args[0]
+	}
+
+	resp, err := client.Media(ctx, &mlibgrpc.MediaRequest{
+		Uri: path,
 	})
 	if err != nil {
 		return err
