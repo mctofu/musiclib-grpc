@@ -7,6 +7,18 @@ typedef struct MLibGRPC_BrowseItem {
 	char *image_uri;
 	int folder;
 } MLibGRPC_BrowseItem;
+
+typedef struct MLibGRPC_BrowseItems {
+	MLibGRPC_BrowseItem **items;
+	int count;
+} MLibGRPC_BrowseItems;
+
+typedef struct MLibGRPC_MediaItems {
+	char **items;
+	int count;
+} MLibGRPC_MediaItems;
+
+
 */
 import "C"
 
@@ -72,7 +84,7 @@ func MLibGRPC_Disconnect() int {
 }
 
 //export MLibGRPC_Browse
-func MLibGRPC_Browse(cURI *C.char, cSearch *C.char, browseType int32) **C.struct_MLibGRPC_BrowseItem {
+func MLibGRPC_Browse(cURI *C.char, cSearch *C.char, browseType int32) *C.struct_MLibGRPC_BrowseItems {
 	uri := C.GoString(cURI)
 	search := C.GoString(cSearch)
 	browseTypeName := mlibgrpc.BrowseType_name[browseType]
@@ -89,7 +101,7 @@ func MLibGRPC_Browse(cURI *C.char, cSearch *C.char, browseType int32) **C.struct
 		}
 	}
 
-	result := C.malloc(C.size_t(len(items)+1) * C.size_t(unsafe.Sizeof(uintptr(0))))
+	result := C.malloc(C.size_t(len(items)) * C.size_t(unsafe.Sizeof(uintptr(0))))
 	resultArr := (*[1<<30 - 1]*C.struct_MLibGRPC_BrowseItem)(result)
 
 	for i, item := range items {
@@ -107,11 +119,14 @@ func MLibGRPC_Browse(cURI *C.char, cSearch *C.char, browseType int32) **C.struct
 		resultArr[i] = cBrowseItem
 	}
 
-	resultArr[len(items)] = nil
-
 	log.Printf("MLibGRPC_Browse: %d results\n", len(items))
 
-	return (**C.struct_MLibGRPC_BrowseItem)(result)
+	cBrowseItems := (*C.struct_MLibGRPC_BrowseItems)(C.malloc(
+		C.size_t(unsafe.Sizeof(C.struct_MLibGRPC_BrowseItems{}))))
+	cBrowseItems.items = (**C.struct_MLibGRPC_BrowseItem)(result)
+	cBrowseItems.count = C.int(len(items))
+
+	return (*C.struct_MLibGRPC_BrowseItems)(cBrowseItems)
 }
 
 func browse(uri string, search string, browseType mlibgrpc.BrowseType) ([]*mlibgrpc.BrowseItem, error) {
@@ -127,7 +142,6 @@ func browse(uri string, search string, browseType mlibgrpc.BrowseType) ([]*mlibg
 	req := &mlibgrpc.BrowseRequest{
 		Uri:        uri,
 		Search:     search,
-		Reverse:    true,
 		BrowseType: browseType,
 	}
 
@@ -140,7 +154,7 @@ func browse(uri string, search string, browseType mlibgrpc.BrowseType) ([]*mlibg
 }
 
 //export MLibGRPC_Media
-func MLibGRPC_Media(cURI *C.char, cSearch *C.char, browseType int32) **C.char {
+func MLibGRPC_Media(cURI *C.char, cSearch *C.char, browseType int32) *C.struct_MLibGRPC_MediaItems {
 	uri := C.GoString(cURI)
 	search := C.GoString(cSearch)
 	browseTypeName := mlibgrpc.BrowseType_name[browseType]
@@ -153,18 +167,21 @@ func MLibGRPC_Media(cURI *C.char, cSearch *C.char, browseType int32) **C.char {
 		items = []string{err.Error()}
 	}
 
-	result := C.malloc(C.size_t(len(items)+1) * C.size_t(unsafe.Sizeof(uintptr(0))))
+	result := C.malloc(C.size_t(len(items)) * C.size_t(unsafe.Sizeof(uintptr(0))))
 	resultArr := (*[1<<30 - 1]*C.char)(result)
 
 	for i, item := range items {
 		resultArr[i] = C.CString(item)
 	}
 
-	resultArr[len(items)] = nil
-
 	log.Printf("MLibGRPC_Media: %d results\n", len(items))
 
-	return (**C.char)(result)
+	cMediaItems := (*C.struct_MLibGRPC_MediaItems)(C.malloc(
+		C.size_t(unsafe.Sizeof(C.struct_MLibGRPC_MediaItems{}))))
+	cMediaItems.items = (**C.char)(result)
+	cMediaItems.count = C.int(len(items))
+
+	return (*C.struct_MLibGRPC_MediaItems)(cMediaItems)
 }
 
 func media(uri string, search string, browseType mlibgrpc.BrowseType) ([]string, error) {
@@ -180,7 +197,6 @@ func media(uri string, search string, browseType mlibgrpc.BrowseType) ([]string,
 	req := &mlibgrpc.MediaRequest{
 		Uri:        uri,
 		Search:     search,
-		Reverse:    true,
 		BrowseType: browseType,
 	}
 
