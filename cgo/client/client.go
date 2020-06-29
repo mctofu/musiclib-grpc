@@ -137,6 +137,8 @@ func browse(uri string, search string, browseType mlibgrpc.BrowseType) ([]*mlibg
 		return nil, errors.New("not connected")
 	}
 
+	conn.ResetConnectBackoff()
+
 	ctx := context.Background()
 
 	req := &mlibgrpc.BrowseRequest{
