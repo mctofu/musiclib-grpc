@@ -77,7 +77,7 @@ func MLibGRPC_Disconnect() int {
 	client = nil
 	conn = nil
 
-	log.Printf("Disconnected!")
+	log.Printf("MLibGRPC_Disconnect: Disconnected!")
 
 	return 0
 }
