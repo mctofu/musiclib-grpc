@@ -31,6 +31,9 @@ enum BrowseType {
     BROWSE_TYPE_UNSPECIFIED = 0;
     BROWSE_TYPE_FOLDER = 1;
     BROWSE_TYPE_ALBUM_ARTIST = 2;
+    BROWSE_TYPE_GENRE = 3;
+    BROWSE_TYPE_YEAR = 4;
+    BROWSE_TYPE_MODIFIED = 5;
 }
 
 message MediaRequest {

@@ -1,3 +1,4 @@
+// Simple CLI to make requests to a mlib-grpc server
 package main
 
 import (
