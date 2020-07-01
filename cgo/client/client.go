@@ -16,8 +16,7 @@ typedef struct MLibGRPC_BrowseItems {
 typedef struct MLibGRPC_MediaItems {
 	char **items;
 	int count;
-} MLibGRPC_MediaItems;
-
+} MLibGRPC_MediaItems
 
 */
 import "C"
