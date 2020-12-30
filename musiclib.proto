@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package mlibgrpc;
+option go_package = "github.com/mctofu/musiclib-grpc/go/mlibgrpc";
 
 service MusicLibrary {
     // Browse returns matching contents of a folder uri
