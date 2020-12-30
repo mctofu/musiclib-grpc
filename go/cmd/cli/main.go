@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mctofu/music-library-grpc/go/mlibgrpc"
+	"github.com/mctofu/musiclib-grpc/go/mlibgrpc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -47,7 +47,6 @@ func run() error {
 
 func browse(ctx context.Context, client mlibgrpc.MusicLibraryClient, args []string) error {
 	var path string
-
 	if len(args) > 0 {
 		path = args[0]
 	}
@@ -66,7 +65,6 @@ func browse(ctx context.Context, client mlibgrpc.MusicLibraryClient, args []stri
 
 func media(ctx context.Context, client mlibgrpc.MusicLibraryClient, args []string) error {
 	var path string
-
 	if len(args) > 0 {
 		path = args[0]
 	}

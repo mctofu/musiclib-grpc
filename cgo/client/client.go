@@ -16,7 +16,7 @@ typedef struct MLibGRPC_BrowseItems {
 typedef struct MLibGRPC_MediaItems {
 	char **items;
 	int count;
-} MLibGRPC_MediaItems
+} MLibGRPC_MediaItems;
 
 */
 import "C"
@@ -28,7 +28,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/mctofu/music-library-grpc/go/mlibgrpc"
+	"github.com/mctofu/musiclib-grpc/go/mlibgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -37,7 +37,7 @@ var conn *grpc.ClientConn
 var connMutex sync.Mutex
 
 //export MLibGRPC_Connect
-func MLibGRPC_Connect() int {
+func MLibGRPC_Connect(target *C.char, secure bool, debug bool) int {
 	connMutex.Lock()
 	defer connMutex.Unlock()
 
@@ -46,7 +46,13 @@ func MLibGRPC_Connect() int {
 		return 1
 	}
 
-	grpcConn, err := grpc.Dial("127.0.0.1:8337", grpc.WithInsecure())
+	grpcTarget := C.GoString(target)
+
+	var opts []grpc.DialOption
+	if !secure {
+		opts = append(opts, grpc.WithInsecure())
+	}
+	grpcConn, err := grpc.Dial(grpcTarget, opts...)
 	if err != nil {
 		log.Printf("MLibGRPC_Connect: failed to connect: %v\n", err)
 		return 2

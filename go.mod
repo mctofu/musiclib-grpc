@@ -1,4 +1,4 @@
-module github.com/mctofu/music-library-grpc
+module github.com/mctofu/musiclib-grpc
 
 go 1.14
 
