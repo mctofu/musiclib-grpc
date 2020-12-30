@@ -29,7 +29,9 @@ jobs:
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/go.sum') }}
 
     - name: Build
-      run: go build -v ./...
+      run: |
+        go build -v ./...
+        ./cgo.sh
 
     - name: Test
       run: go test -cover ./...
